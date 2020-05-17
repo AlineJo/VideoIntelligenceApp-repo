@@ -3,7 +3,9 @@ package com.programining.videointelligenceapp.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,11 +41,12 @@ public class VideoIntelligenceFragment extends Fragment {
     /**
      * use this command to print the TOKEN : gcloud auth application-default print-access-token
      */
-    private static final String API_TOKEN = "ya29.c.Ko8Bywd3QQkJoYDO_cts64xl6acVXLjQopz2T_xMr_B441LnpeJmYvIXJXAXdFZAdow0GZXV9EsHiABvIPtvM7bNU_nIDZZ9Tnjh7VkZjue2HYI2eWzJGZO0pIKTxg52-5KTQ3lHfQdWbF6TQcFkF0blNXB3F41KT7OaC_2gg9CBzZA7cqmayletjUhZIQHMH40";
+    private static final String API_TOKEN = "ya29.c.Ko8Bywcps19tEl7UeAJIQdkTxjbnC-Tae9hVnRmTjdWzmBcCXpoEA54dqnu8qFZrtemH-OxCCQTisWUOGEGW2EkMk8L7jJIkBEI-o8OfQcy7uapFAKktYoQahvmWKlBa6scAGz0mzjLdlSr1F2TXai2GmnzLH_Lfd2oNdsKJfsGVKfQ0RQai8awSwL7OferPfP4";
     private TextView tvResponse;
     private ProgressBar progressBar;
     private Context mContext;
-
+    private String mResultLink;
+    private Button btnRequest;
 
     public VideoIntelligenceFragment() {
         // Required empty public constructor
@@ -64,11 +67,16 @@ public class VideoIntelligenceFragment extends Fragment {
         progressBar = parentView.findViewById(R.id.progressBar);
         tvResponse = parentView.findViewById(R.id.tv_response);
         tvResponse.setMovementMethod(new ScrollingMovementMethod());
-        Button btnRequest = parentView.findViewById(R.id.btn_request);
+
+        btnRequest = parentView.findViewById(R.id.btn_request);
         btnRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                requestVideoIntelligenceAPI();
+                if (mResultLink == null) {
+                    requestVideoIntelligenceAPI();
+                } else {
+                    getVideoIntelligenceResponse();
+                }
             }
         });
 
@@ -85,6 +93,28 @@ public class VideoIntelligenceFragment extends Fragment {
             public void onResponse(JSONObject response) {
                 tvResponse.setText(response.toString());
                 progressBar.setVisibility(View.GONE);
+
+                try {
+                    String link = response.getString("name");
+                    Log.d("link-first", link);
+
+                    mResultLink = link;
+
+                    btnRequest.setEnabled(false);
+                    //auto call getVideoIntelligenceResponse() after 2mins
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            getVideoIntelligenceResponse();
+                            btnRequest.setEnabled(true);
+                        }
+                    }, 60000);
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
 
             }
         };
@@ -120,6 +150,7 @@ public class VideoIntelligenceFragment extends Fragment {
 
         queue.add(request);
     }
+
 
     private JSONObject getVideoIntelligenceJsonObj() {
 
@@ -186,5 +217,47 @@ public class VideoIntelligenceFragment extends Fragment {
         return null;
     }
 
+    private void getVideoIntelligenceResponse() {
 
+        String resultURL = "https://videointelligence.googleapis.com/v1/" + mResultLink;
+        Log.d("link-result", resultURL);
+
+        RequestQueue queue = Volley.newRequestQueue(mContext);
+
+        Response.Listener<JSONObject> successListener = new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                tvResponse.setText(response.toString());
+                progressBar.setVisibility(View.GONE);
+            }
+        };
+
+        Response.ErrorListener errorListener = new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                tvResponse.setText(error.toString());
+                progressBar.setVisibility(View.GONE);
+            }
+        };
+
+        progressBar.setVisibility(View.VISIBLE);
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                resultURL,
+                null,
+                successListener,
+                errorListener) {
+            //pass token to the webservice!
+            @Override
+            public Map<String, String> getHeaders() {
+                HashMap<String, String> headers = new HashMap<>();
+                headers.put("Authorization", API_KEY_BEARER + API_TOKEN);
+                return headers;
+            }
+
+
+        };
+
+        queue.add(request);
+    }
 }
