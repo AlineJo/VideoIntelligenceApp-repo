@@ -39,7 +39,7 @@ public class VideoIntelligenceFragment extends Fragment {
     /**
      * use this command to print the TOKEN : gcloud auth application-default print-access-token
      */
-    private static final String API_TOKEN = "ya29.c.Ko8BywfvbPLIoECG45kcXSXvYWXd8ajKXzGMPNndcFLYVwliDZ-Iy6efk6sIUPle-ba_NHxL6ghdlaLFAUKiHfvooPwtZ9Bo6sUSbUJOS08IcpdUXzv8hwjjFljvFx4Hfzm3ZvlErkmEAYTUhxjn40KdJBhPgJhyWG6RSz4s9oJWlFClBQJuoKAPm7ZkfOdCUwU";
+    private static final String API_TOKEN = "ya29.c.Ko8Bywd3QQkJoYDO_cts64xl6acVXLjQopz2T_xMr_B441LnpeJmYvIXJXAXdFZAdow0GZXV9EsHiABvIPtvM7bNU_nIDZZ9Tnjh7VkZjue2HYI2eWzJGZO0pIKTxg52-5KTQ3lHfQdWbF6TQcFkF0blNXB3F41KT7OaC_2gg9CBzZA7cqmayletjUhZIQHMH40";
     private TextView tvResponse;
     private ProgressBar progressBar;
     private Context mContext;
@@ -101,7 +101,7 @@ public class VideoIntelligenceFragment extends Fragment {
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.POST,
                 API_KEY_URL,
-                getVideoIntelligenceJsonObj(),
+                getVideoIntelligenceTranscriptJsonObj(),
                 successListener,
                 errorListener
         ) {
@@ -137,6 +137,47 @@ public class VideoIntelligenceFragment extends Fragment {
             JSONArray features = new JSONArray();
             features.put("LABEL_DETECTION");
             container.put("features", features);
+            return container;
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private JSONObject getVideoIntelligenceTranscriptJsonObj() {
+
+        /**
+         *
+         {
+         "inputUri": "input-uri",
+         "features": ["SPEECH_TRANSCRIPTION"],
+         "videoContext": {
+         "speechTranscriptionConfig": {
+         "languageCode": "language-code",
+         "enableAutomaticPunctuation": true,
+         "filterProfanity": true
+         }
+         }
+         }
+         */
+
+        try {
+            JSONObject container = new JSONObject();
+            container.put("inputUri", "gs://yousuf-dialogflow.appspot.com/Videos/iPhone SE - Snooze Edition.mp4");
+            JSONArray features = new JSONArray();
+            features.put("SPEECH_TRANSCRIPTION");
+            container.put("features", features);
+
+            JSONObject videoContext = new JSONObject();
+            JSONObject speechConfig = new JSONObject();
+            speechConfig.put("languageCode", "en-US");
+            speechConfig.put("enableAutomaticPunctuation", "true");
+            speechConfig.put("filterProfanity", "true");
+            videoContext.put("speechTranscriptionConfig", speechConfig);
+
+            container.put("videoContext", videoContext);
+
             return container;
 
         } catch (JSONException e) {
